@@ -43,7 +43,13 @@ def process_contact(contacts: List[Contact]):
         producer.flush()
         return {"status": "success", "message": f"Successfully processed {len(contacts)} contacts"}
     except Exception as e:
+
         return {"status": "error", "message": str(e)}
+
+@app.get("/hello")
+def say_hello():
+    return {"message": "Hello, World!"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
