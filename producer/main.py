@@ -17,29 +17,20 @@ topic = 'contact_events'
 class Contact(BaseModel):
     action: str
     contact_id: str = None  # Optional for create, required for update
-    first_name: str
-    last_name: str = None  # Optional
-    email: str = None  # Optional
-    phone: str = None  # Optional
-    address: str = None  # Optional
+    first_name: str = None 
+    last_name: str = None
+    email: str = None
+    phone: str = None
+    address: str = None
+
 
 @app.post("/process_contact")
 def process_contact(contacts: List[Contact]):
     try:
         for contact in contacts:
             contact_data = contact.json().encode('utf-8')
-            
-            # Determine the partition based on the action
-            if contact.action == 'create':
-                partition = 1
-            elif contact.action == 'update':
-                partition = 2
-            else:
-                return {"status": "error", "message": f"Unknown action: {contact.action}"}
-            
-            # Produce the message to the specified partition
-            producer.produce(topic, value=contact_data, partition=partition)
-        
+            producer.produce(topic, value=contact_data)
+
         producer.flush()
         return {"status": "success", "message": f"Successfully processed {len(contacts)} contacts"}
     except Exception as e:

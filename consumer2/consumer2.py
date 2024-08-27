@@ -100,8 +100,7 @@ def update_salesforce_contact(access_token, instance_url, contact):
 
 def consume_messages():
     consumer = Consumer(conf)
-    topic_partition = TopicPartition('contact_events', 2)  # Listen only to partition 2
-    consumer.assign([topic_partition])
+    consumer.subscribe(['contact_events'])
 
     try:
         # Obtain Salesforce OAuth token
@@ -133,7 +132,8 @@ def consume_messages():
                     continue
 
                 for contact in contact_data:
-                    update_salesforce_contact(access_token, instance_url, contact)
+                    if contact.get('action') == 'update':
+                        update_salesforce_contact(access_token, instance_url, contact)
 
     except Exception as e:
         logging.error(f"Exception occurred while consuming messages: {e}")

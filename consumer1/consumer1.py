@@ -73,7 +73,8 @@ def insert_salesforce_contact(access_token, contact):
         'Content-Type': 'application/json'
     }
 
-    api_base_url = "https://mqu--muletrain.sandbox.my.salesforce.com/services/data/v61.0/sobjects/Contact/"
+    api_base_url = salesforce_conf['api_base_url']
+    #api_base_url = "https://mqu--muletrain.sandbox.my.salesforce.com/services/data/v61.0/sobjects/Contact/"
     
     # Map fields before sending to Salesforce
     mapped_data = map_contact_fields(contact)
@@ -95,8 +96,7 @@ def insert_salesforce_contact(access_token, contact):
 
 def consume_messages():
     consumer = Consumer(conf)
-    topic_partition = TopicPartition('contact_events', 1)  # Listen only to partition 1
-    consumer.assign([topic_partition])
+    consumer.subscribe(['contact_events'])
 
     try:
         # Obtain Salesforce OAuth token
@@ -128,7 +128,8 @@ def consume_messages():
                     continue
 
                 for contact in contact_data:
-                    insert_salesforce_contact(access_token, contact)
+                    if contact.get('action') == 'create':
+                        insert_salesforce_contact(access_token, contact)
 
     except Exception as e:
         logging.error(f"Exception occurred while consuming messages: {e}")
