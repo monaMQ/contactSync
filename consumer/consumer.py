@@ -141,11 +141,11 @@ def consume_messages():
 
         while True:
             msg = consumer.poll(1.0)
-            logging.info("Consumer 1 Polling")
+            logging.info("Consumer Polling")
             logging.info(msg)
 
             if msg is None:
-                logging.info("No message for consumer 1")
+                logging.info("No message for consumer")
                 continue
 
             if msg.error():
@@ -166,7 +166,7 @@ def consume_messages():
                     contact_data = [contact_data]  # Wrap single contact in a list
                 elif isinstance(contact_data, str):
                     print("Expected a dictionary or list of dictionaries, but got a string.")
-                    #logging.error("Expected a dictionary or list of dictionaries, but got a string.")
+                    logging.error("Expected a dictionary or list of dictionaries, but got a string.")
                     continue
 
                 for contact in contact_data:
@@ -180,10 +180,10 @@ def consume_messages():
         logging.info(e)
     finally:
         consumer.close()
-        logging.info("Consumer 1 closed")
+        logging.info("Consumer closed")
 
 def startup():
-    logging.info("Starting consumer 1...")
+    logging.info("Starting consumer...")
     time.sleep(30)  # Allow time for Kafka to start up
     consume_messages()
 

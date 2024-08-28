@@ -63,16 +63,8 @@ services:
     depends_on:
       - kafka
 
-  consumer1:
-    build: ./consumer1
-    environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - KAFKA_GROUP_ID=my-group
-    depends_on:
-      - kafka
-
-  consumer2:
-    build: ./consumer2
+  consumer:
+    build: ./consumer
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - KAFKA_GROUP_ID=my-group
