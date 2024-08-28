@@ -5,6 +5,8 @@ import json
 import requests
 import toml
 
+logging.basicConfig(level=logging.DEBUG)
+
 # Kafka Consumer configuration
 conf = {
     'bootstrap.servers': 'kafka:29092',
@@ -66,6 +68,35 @@ def map_contact_fields(contact_data):
     
     return mapped_data
 
+def insert_salesforce_contact(access_token, contact):
+    """Insert a Salesforce contact using the Salesforce API."""
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+    api_base_url = salesforce_conf['api_base_url']
+    
+    # Map fields before sending to Salesforce
+    mapped_data = map_contact_fields(contact)
+    mapped_data.pop('contact_id', None)  # Remove contact_id from data as it's part of the URL
+    mapped_data.pop('action', None)  # Remove the action field before sending the data
+
+    logging.debug(f"Sending data to Salesforce: {json.dumps(mapped_data)}")
+    response = requests.post(api_base_url, headers=headers, json=mapped_data)
+
+    logging.debug(f"Salesforce response status: {response.status_code}")
+    logging.debug(f"Salesforce response body: {response.text}")
+
+    if response.status_code == 201:
+        print(f"Salesforce contact inserted successfully")
+        logging.info(f"Salesforce contact inserted successfully")
+        return True
+    else:
+        print(f"Failed to insert Salesforce contact: {response.status_code} - {response.text}")
+        logging.error(f"Failed to insert Salesforce contact: {response.status_code} - {response.text}")
+        return False
+
 def update_salesforce_contact(access_token, instance_url, contact):
     """Update a Salesforce contact using the Salesforce API."""
     headers = {
@@ -93,9 +124,11 @@ def update_salesforce_contact(access_token, instance_url, contact):
 
     if response.status_code == 204:
         logging.info(f"Salesforce contact {contact_id} updated successfully")
+        print(f"Salesforce contact {contact_id} updated successfully")
         return True
     else:
         logging.error(f"Failed to update Salesforce contact {contact_id}: {response.text}")
+        print(f"Failed to update Salesforce contact {contact_id}: {response.text}")
         return False
 
 def consume_messages():
@@ -108,19 +141,22 @@ def consume_messages():
 
         while True:
             msg = consumer.poll(1.0)
-            logging.info("Consumer Polling")
+            logging.info("Consumer 2 Polling")
+            logging.info(msg)
 
             if msg is None:
-                logging.info("No message received")
+                logging.info("No message for consumer 2")
                 continue
 
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
-                    logging.info(f'Reached end of partition: {msg.topic()}[{msg.partition()}]')
+                    print(f'Reached end of partition: {msg.topic()}[{msg.partition()}]')
                 else:
-                    logging.error(f'Error while consuming messages: {msg.error()}')
+                    print(f'Error while consuming messages: {msg.error()}')
+                    logging.info(msg.error())
             else:
                 message = msg.value().decode('utf-8')
+                print(f"Received message on consumer two: {message}")
                 logging.info(f"Received message: {message}")
                 contact_data = json.loads(message)
 
@@ -132,17 +168,21 @@ def consume_messages():
                     continue
 
                 for contact in contact_data:
-                    if contact.get('action') == 'update':
+                    if contact.get('action') == 'create':
+                        insert_salesforce_contact(access_token, contact)
+                    else:
                         update_salesforce_contact(access_token, instance_url, contact)
 
     except Exception as e:
-        logging.error(f"Exception occurred while consuming messages: {e}")
+        print(f"Exception occurred while consuming messages: {e}")
+        logging.info(e)
+        #logging.error(f"Exception occurred while consuming messages: {e}")
     finally:
         consumer.close()
-        logging.info("Consumer closed")
+        logging.info("Consumer 2 closed")
 
 def startup():
-    logging.info("Starting consumer...")
+    logging.info("Starting consumer 2 ...")
     time.sleep(30)  # Allow time for Kafka to start up
     consume_messages()
 
@@ -150,4 +190,5 @@ if __name__ == "__main__":
     try:
         startup()
     except Exception as e:
-        logging.error(f"Exception occurred: {e}")
+        print(f"Exception occurred: {e}")
+        #logging.error(f"Exception occurred: {e}")
